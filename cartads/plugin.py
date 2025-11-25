@@ -61,4 +61,4 @@ class Plugin:
     @staticmethod
     def open_help():
         """Open the online help."""
-        QDesktopServices.openUrl(QUrl("https://docs.3liz.org/qgis-liz-example-plugin/"))
+        QDesktopServices.openUrl(QUrl("https://docs.3liz.org/qgis-cartads-plugin/"))

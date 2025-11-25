@@ -17,9 +17,9 @@ tags=cartads
 about=cartads
 icon=resources/icons/icon.png
 category=
-tracker=https://github.com/3liz/qgis-liz-example-plugin
-repository=https://github.com/3liz/qgis-liz-example-plugin
-homepage=https://github.com/3liz/qgis-liz-example-plugin
+tracker=https://github.com/3liz/qgis-cartads-plugin
+repository=https://github.com/3liz/qgis-cartads-plugin
+homepage=https://github.com/3liz/qgis-cartads-plugin
 experimental=True
 deprecated=False
 

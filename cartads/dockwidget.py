@@ -216,5 +216,5 @@ class PluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):  # type: ignore [misc
         """
         Display the help on concepts
         """
-        url = "https://docs.3liz.org/qgis-liz-example-plugin/"
+        url = "https://docs.3liz.org/qgis-cartads-plugin/"
         self.open_external_resource(url)
