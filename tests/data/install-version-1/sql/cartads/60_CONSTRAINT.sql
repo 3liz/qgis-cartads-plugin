@@ -21,17 +21,17 @@ SET row_security = off;
 
 SET default_tablespace = '';
 
--- cartads_parcelle_geom_idx
-CREATE INDEX cartads_parcelle_geom_idx ON cartads.cartads_parcelle USING gist (geom);
+
+-- glossary_test_category glossary_test_category_pkey
+ALTER TABLE ONLY cartads.glossary_test_category
+    ADD CONSTRAINT glossary_test_category_pkey PRIMARY KEY (id);
 
 
--- cartads_parcelle_historique_geom_idx
-CREATE INDEX cartads_parcelle_historique_geom_idx ON cartads.cartads_parcelle_historique USING gist (geom);
+-- test test_pkey
+ALTER TABLE ONLY cartads.test
+    ADD CONSTRAINT test_pkey PRIMARY KEY (id);
 
 
 --
 -- PostgreSQL database dump complete
 --
-
-
-

@@ -26,5 +26,5 @@ deprecated=False
 hasProcessingProvider=True
 
 [cartads]
-schemaVersion=1
+schemaVersion=2
 schemaName=cartads

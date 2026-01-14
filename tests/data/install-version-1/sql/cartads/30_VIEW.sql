@@ -19,16 +19,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-SET default_tablespace = '';
-
--- cartads_parcelle_geom_idx
-CREATE INDEX cartads_parcelle_geom_idx ON cartads.cartads_parcelle USING gist (geom);
-
-
--- cartads_parcelle_historique_geom_idx
-CREATE INDEX cartads_parcelle_historique_geom_idx ON cartads.cartads_parcelle_historique USING gist (geom);
-
-
 --
 -- PostgreSQL database dump complete
 --
