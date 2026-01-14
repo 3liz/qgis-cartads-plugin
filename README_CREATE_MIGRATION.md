@@ -2,7 +2,7 @@
 
 1. Create a new migration scheme: 
    ```
-   make upgrade-shchema-version
+   make upgrade-schema-version
    ```
 2. Edit the sql migration file; `cartads/install/sql/upgrade/upgrade_to_<n>.sql`
    where `<n>` is the new version number.
