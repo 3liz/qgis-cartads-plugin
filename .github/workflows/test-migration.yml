@@ -11,16 +11,19 @@ on:
 jobs:
   test-migration:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .docker
+    strategy:
+      matrix:
+        qgis_version: [
+            "3.34",
+            "3.40",
+            "3.44",
+          ]
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v2
-
-      - name: Launching docker compose
-        run: ./start.sh
+        uses: actions/checkout@v6
+        with:
+          submodules: 'true'
 
       - name: Running tests
-        run: ./install_migrate_generate.sh
+        run: make docker-test QGIS_VERSION=${{ matrix.qgis_version }}
