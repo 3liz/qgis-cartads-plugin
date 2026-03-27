@@ -1,0 +1,7 @@
+---
+--- Upgrade to version 1
+---
+--- This is the first version of the database structure.
+--- It is used to create the database structure from scratch.
+---
+--- The following tables are created:
