@@ -25,7 +25,7 @@ SET row_security = off;
 
 INSERT INTO cartads.glossary_zones (glossary_zones_id, zones_type, zones_type_code) VALUES (1, 'Zonage', 'Z');
 INSERT INTO cartads.glossary_zones (glossary_zones_id, zones_type, zones_type_code) VALUES (2, 'Contrainte annexe', 'C');
-INSERT INTO cartads.glossary_zones (glossary_zones_id, zones_type, zones_type_code) VALUES (3, 'Servitude d''utilité publique', 'C');
+INSERT INTO cartads.glossary_zones (glossary_zones_id, zones_type, zones_type_code) VALUES (3, 'Servitude d''utilité publique', 'S');
 INSERT INTO cartads.glossary_zones (glossary_zones_id, zones_type, zones_type_code) VALUES (4, 'Prescription d''urbanisme', 'P');
 INSERT INTO cartads.glossary_zones (glossary_zones_id, zones_type, zones_type_code) VALUES (5, 'Document annexe', 'D');
 
@@ -40,6 +40,3 @@ SELECT pg_catalog.setval('cartads.glossary_zones_glossary_zones_id_seq', 5, true
 --
 -- PostgreSQL database dump complete
 --
-
-
-

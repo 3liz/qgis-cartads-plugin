@@ -1,6 +1,7 @@
 
 from qgis.core import (
     QgsProcessingException,
+    QgsProcessingFeedback,
     QgsProcessingOutputNumber,
     QgsProcessingOutputString,
     QgsProcessingParameterBoolean,
@@ -109,16 +110,15 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
 
         return super(UpgradeDatabaseStructure, self).checkParameterValues(parameters, context)
 
-    def processAlgorithm(self, parameters, context, feedback):
-        # Run migration
-        run_migrations = self.parameterAsBool(parameters, self.RUN_MIGRATIONS, context)
-        if not run_migrations:
-            msg = tr("Vous devez cocher cette case pour réaliser la mise à jour !")
-            raise QgsProcessingException(msg)
-
+    @staticmethod
+    def upgrade_database(
+        connection_name: str,
+        schema: str,
+        *,
+        run_migrations: bool,
+        feedback: QgsProcessingFeedback,
+    ):
         metadata = QgsProviderRegistry.instance().providerMetadata("postgres")
-        connection_name = self.parameterAsConnectionName(parameters, self.CONNECTION_NAME, context)
-        schema = self.parameterAsString(parameters, self.SCHEMA, context)
 
         connection = metadata.findConnection(connection_name)
 
@@ -148,17 +148,14 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         current_version = resources.schema_version()
         feedback.pushInfo(tr("Schema version") + " = {}".format(current_version))
 
-        # Return if nothing to do
+        # Check if nothing to do
         if db_version == current_version:
-            return {
-                self.OUTPUT_STATUS: 1,
-                self.OUTPUT_STRING: tr(
-                    " The database version already matches the plugin version. No upgrade needed."
-                ),
-            }
+            feedback.pushInfo(
+                tr("The database version already matches the plugin version. No upgrade needed.")
+            )
+            return True
 
         migrations = resources.available_migrations(db_version)
-
         # Loop sql files and run SQL code
         for new_db_version, sql_file in migrations:
             with sql_file.open() as f:
@@ -202,6 +199,25 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
             connection.executeSql(sql)
         except QgsProviderConnectionException as e:
             raise QgsProcessingException(str(e))
+
+        return True
+
+    def processAlgorithm(self, parameters, context, feedback):
+        connection_name = self.parameterAsConnectionName(parameters, self.CONNECTION_NAME, context)
+        schema = self.parameterAsString(parameters, self.SCHEMA, context)
+        # Run migration
+        run_migrations = self.parameterAsBool(parameters, self.RUN_MIGRATIONS, context)
+        if not run_migrations:
+            msg = tr("Vous devez cocher cette case pour réaliser la mise à jour !")
+            raise QgsProcessingException(msg)
+
+        feedback.pushInfo(tr('Upgrade schema'))
+        self.upgrade_database(
+            connection_name,
+            schema,
+            run_migrations=run_migrations,
+            feedback=feedback,
+        )
 
         msg = tr("*** THE DATABASE STRUCTURE HAS BEEN UPDATED ***")
         feedback.pushInfo(msg)

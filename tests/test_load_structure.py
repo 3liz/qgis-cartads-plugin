@@ -14,6 +14,7 @@ from cartads.plugin_tools.resources import (
     schema_version,
 )
 from cartads.processing.database import CreateDatabaseStructure
+from cartads.processing.database import UpgradeDatabaseStructure
 from cartads.processing.provider import Provider
 
 # This list must not be changed
@@ -28,10 +29,23 @@ TABLES_FOR_FIRST_VERSION = [
 # Expected list of tables for current version
 # Must be changed any time the SQL structure is changed
 TABLES_FOR_CURRENT_VERSION = [
-    "glossary_test_category",
+    "glossary_zones",
     "metadata",
-    "test",
+    "cartads_dossier",
+    "cartads_dossier_geo",
+    "cartads_dossier_parcelle",
+    "cartads_dossier_parcelle_historique",
+    "cartads_parcelle",
+    "cartads_parcelle_historique",
+    "communes",
+    "geo_zones",
+    "new_cartads_dossier",
+    "zones",
 ]
+
+def test_available_migrations():
+    versions = available_migrations()
+    assert versions[-1][0] == schema_version() # The last upgrade available
 
 
 def test_processing_create(processing_provider: Provider):
@@ -61,13 +75,16 @@ def test_upgrade_from(
 
     current_version = schema_version()
 
-    assert db_install_version is not None, "This test require at least one availabl upgrade"
+    assert db_install_version is not None, "This test require at least one available upgrade"
     assert current_version >= db_install_version, (
         "Current schema version cannot be lower than install version"
     )
 
-    # Get the installation dir
-    install_dir = data.joinpath(f"install-version-{current_version}", "sql")
+    # Get the installation dir of the previous version
+    test_version = db_install_version
+    if current_version == db_install_version:
+        test_version = db_install_version - 1
+    install_dir = data.joinpath(f"install-version-{test_version}", "sql")
     assert install_dir.exists()
 
     feedback = LoggerProcessingFeedBack()
@@ -76,7 +93,7 @@ def test_upgrade_from(
     CreateDatabaseStructure.create_database(
         "test",
         db_schema,
-        version=db_install_version,
+        version=test_version,
         override=True,
         install_dir=install_dir,
         feedback=feedback,
@@ -104,7 +121,7 @@ def test_upgrade_from(
     # DO NOT CHANGE HERE, change below at the end of the test.
     case.assertCountEqual(TABLES_FOR_FIRST_VERSION, result)
 
-    assert result == TABLES_FOR_CURRENT_VERSION
+    assert result == TABLES_FOR_FIRST_VERSION
 
     # Check if the version has been written in the metadata table
     sql = f"""
@@ -117,23 +134,20 @@ def test_upgrade_from(
     cursor.execute(sql)
     record = cursor.fetchone()
     assert record is not None
-    assert int(record[0]) == db_install_version
+    assert int(record[0]) == test_version
+    assert int(record[0]) != current_version
 
     # Run the update database structure alg
     # Since the structure has been created with db_install_version above
     # The expected list of tables
     feedback.pushDebugInfo("Update the database")
-    params = {
-        "CONNECTION_NAME": "test",
-        "RUN_MIGRATIONS": True
-    }
-    alg = f"{provider_id}:upgrade_database_structure"
-    results = processing.run(alg, params, feedback=feedback)
-
-    assert results["OUTPUT_STATUS"] == 1
-    assert results["OUTPUT_STRING"] == "*** THE DATABASE STRUCTURE HAS BEEN UPDATED ***"
-
-    # Check the version has been updated
+    UpgradeDatabaseStructure.upgrade_database(
+        "test",
+        db_schema,
+        run_migrations=True,
+        feedback=feedback,
+    )
+    # Check if the version has been written in the metadata table
     sql = f"""
         SELECT me_version
         FROM {db_schema}.metadata
@@ -143,13 +157,9 @@ def test_upgrade_from(
     """
     cursor.execute(sql)
     record = cursor.fetchone()
-
-    migrations = available_migrations()
-    if migrations:
-        version, _ = migrations[-1]
-        assert record is not None
-        assert int(record[0]) == version
-
+    assert record is not None
+    assert int(record[0]) == current_version
+    assert int(record[0]) != test_version
     # Check the list of tables
     cursor.execute(
         f"""
@@ -163,27 +173,102 @@ def test_upgrade_from(
     result = [r[0] for r in records]
     case.assertCountEqual(TABLES_FOR_CURRENT_VERSION, result)
 
-    # Create the database structure with override
-    # This will delete and recreate the structure for the last version
-    feedback.pushDebugInfo("Relaunch the algorithm without override")
-    params = {
-        'CONNECTION_NAME': 'test',
-        "OVERRIDE": True,
-    }
+    # Close connection
+    db_connection.close()
 
-    # Check we need to run upgrade or not
+
+def test_upgrade_all(
+    db_schema: str,
+    db_connection: psycopg.Connection,
+    processing_provider: Provider,
+    data: Path,
+):
+    """Test the algorithms for creating and updating the database structure."""
+
+    current_version = schema_version()
+
+    assert current_version >= 1, (
+        "Current schema version cannot be lower than install version"
+    )
+
+    # Get the installation dir of the previous version
+    test_version = 1
+    install_dir = data.joinpath(f"install-version-{test_version}", "sql")
+    assert install_dir.exists()
+
+    feedback = LoggerProcessingFeedBack()
+
+    # Create the database from the latest update
+    CreateDatabaseStructure.create_database(
+        "test",
+        db_schema,
+        version=test_version,
+        override=True,
+        install_dir=install_dir,
+        feedback=feedback,
+    )
+
+    case = unittest.TestCase()
+
+    provider_id = processing_provider.id()
+
+    cursor = db_connection.cursor()
+
+    # Check the list of tables and views from the database
+    cursor.execute(
+        f"""
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = '{db_schema}'
+        ORDER BY table_name
+        """
+    )
+    records = cursor.fetchall()
+    result = [r[0] for r in records]
+
+    # Expected tables in the specific version written above at the beginning of the test.
+    # DO NOT CHANGE HERE, change below at the end of the test.
+    case.assertCountEqual(TABLES_FOR_FIRST_VERSION, result)
+
+    assert result == TABLES_FOR_FIRST_VERSION
+
+    # Check if the version has been written in the metadata table
+    sql = f"""
+        SELECT me_version
+        FROM {db_schema}.metadata
+        WHERE me_status = 1
+        ORDER BY me_version_date DESC
+        LIMIT 1;
+    """
+    cursor.execute(sql)
+    record = cursor.fetchone()
+    assert record is not None
+    assert int(record[0]) == test_version
+    assert int(record[0]) != current_version
+
+    # Run the update database structure alg
+    # Since the structure has been created with db_install_version above
+    # The expected list of tables
     feedback.pushDebugInfo("Update the database")
-    params = {
-        "CONNECTION_NAME": "test",
-        "RUN_MIGRATIONS": True
-    }
-    alg = f"{provider_id}:upgrade_database_structure"
-    results = processing.run(alg, params, feedback=feedback)
-    assert results["OUTPUT_STATUS"] == 1
-    assert results["OUTPUT_STRING"] == (
-        " The database version already matches the plugin version. No upgrade needed."
+    UpgradeDatabaseStructure.upgrade_database(
+        "test",
+        db_schema,
+        run_migrations=True,
+        feedback=feedback,
     )
-
+    # Check if the version has been written in the metadata table
+    sql = f"""
+        SELECT me_version
+        FROM {db_schema}.metadata
+        WHERE me_status = 1
+        ORDER BY me_version_date DESC
+        LIMIT 1;
+    """
+    cursor.execute(sql)
+    record = cursor.fetchone()
+    assert record is not None
+    assert int(record[0]) == current_version
+    assert int(record[0]) != test_version
     # Check the list of tables
     cursor.execute(
         f"""
@@ -195,7 +280,7 @@ def test_upgrade_from(
     )
     records = cursor.fetchall()
     result = [r[0] for r in records]
-
     case.assertCountEqual(TABLES_FOR_CURRENT_VERSION, result)
 
-    assert result == TABLES_FOR_CURRENT_VERSION
+    # Close connection
+    db_connection.close()

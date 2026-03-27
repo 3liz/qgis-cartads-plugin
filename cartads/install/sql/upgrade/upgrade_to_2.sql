@@ -1,14 +1,6 @@
 DROP TABLE IF EXISTS cartads.glossary_test_category CASCADE;
 DROP TABLE IF EXISTS cartads.test CASCADE;
 
-
---
--- Name: cartads; Type: SCHEMA; Schema: -; Owner: -
---
-
-CREATE SCHEMA cartads;
-
-
 --
 -- Name: SCHEMA cartads; Type: COMMENT; Schema: -; Owner: -
 --
@@ -639,6 +631,6 @@ CREATE INDEX cartads_parcelle_historique_geom_idx ON cartads.cartads_parcelle_hi
 
 INSERT INTO cartads.glossary_zones (zones_type, zones_type_code) VALUES ('Zonage', 'Z');
 INSERT INTO cartads.glossary_zones (zones_type, zones_type_code) VALUES ('Contrainte annexe', 'C');
-INSERT INTO cartads.glossary_zones (zones_type, zones_type_code) VALUES ('Servitude d''utilité publique', 'C');
+INSERT INTO cartads.glossary_zones (zones_type, zones_type_code) VALUES ('Servitude d''utilité publique', 'S');
 INSERT INTO cartads.glossary_zones (zones_type, zones_type_code) VALUES ('Prescription d''urbanisme', 'P');
 INSERT INTO cartads.glossary_zones (zones_type, zones_type_code) VALUES ('Document annexe', 'D');
