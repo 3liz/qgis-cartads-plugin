@@ -1,6 +1,6 @@
 [general]
 name=cartads
-qgisMinimumVersion=3.40
+qgisMinimumVersion=3.34
 description=cartads
 
 # Done by qgis-plugin-ci

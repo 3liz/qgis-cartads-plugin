@@ -9,6 +9,7 @@ from .alg_configure_plugin import ConfigurePlugin
 from .alg_create_database_local_interface import CreateDatabaseLocalInterface
 from .database import (
     CreateDatabaseStructure,
+    ImportFromApi,
     UpgradeDatabaseStructure,
 )
 from .tools import provider_id
@@ -28,6 +29,7 @@ class Provider(QgsProcessingProvider):
         # Database
         self.addAlgorithm(CreateDatabaseStructure())
         self.addAlgorithm(UpgradeDatabaseStructure())
+        self.addAlgorithm(ImportFromApi())
 
         self.addAlgorithm(CreateDatabaseLocalInterface())
 

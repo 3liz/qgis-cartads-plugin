@@ -47,6 +47,7 @@ class PluginDockWidget(QtWidgets.QDockWidget, FORM_CLASS):  # type: ignore [misc
             "create_database_structure",
             "upgrade_database_structure",
             "create_database_local_interface",
+            "import_from_api",
         ]
         for alg in self.algorithms:
             button = self.findChild(QPushButton, f"button_{alg}")
