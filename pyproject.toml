@@ -27,23 +27,18 @@ tracker = "https://github.com/3liz/qgis-qgis-cartads-plugin-plugin"
 repository = "https://github.com/3liz/qgis-qgis-cartads-plugin-plugin"
 homepage = "https://github.com/3liz/qgis-qgis-cartads-plugin-plugin"
 
-# See https://packaging.python.org/en/latest/specifications/well-known-project-urls/
-# for wellknown urls
-[project.urls]
-homepage = "https://docs.lizmap.com"
-repository = "https://github.com/3liz/lizmap-plugin"
-tracker = "https://github.com/3liz/lizmap-plugin/issues"
-
 # Organize dependencies so that uv can build appropriates
 # requirement files for CI
 [dependency-groups]
 dev = [
-    "pre-commit",
+    "coverage[toml]",
     {include-group = "tests"},
     {include-group = "lint"},
 ]
 tests = [
-    "pytest >= 5.3",
+    "semver",
+    "pytest",
+    "pytest_qgis",
     "psycopg[binary]",
 ]
 lint = [
@@ -51,30 +46,29 @@ lint = [
     "mypy",
     "bandit",
     "vulture",
+    "types-requests",
 ]
-packaging = [
-    "qgis-plugin-ci>= 2.7.0",
+transifex = [
+    "qt-transifex; python_full_version >= '3.12'",
 ]
 doc = [
     "mkdocs-material>=7.0.0,<10.0.0",
     "mkdocs-git-revision-date-localized-plugin",
 ]
 
-#
-# Qgis plugin ci
-#
-# https://opengisch.github.io/qgis-plugin-ci/index.html
-#
+[tool.uv.sources]
+qt-transifex = { git = "https://github.com/3liz/qt-transifex" }
+pytest-qgis = { git = "https://github.com/3liz/pytest-qgis.git" }
 
-[qgis-plugin-ci]
-plugin_path = "cartads"
-github_organization_slug = "3liz"
-project_slug = "qgis-qgis-cartads-plugin-plugin"
-transifex_organization = "3liz-1"
-transifex_project = "qgis-cartads-plugin"
-transifex_resource = "qgis-cartads-plugin"
-transifex_coordinator = "mdouchin"
-changelog_include = true
+[tool.yapt]
+plugin_source = "cartads"
+
+[tool.qt-transifex]
+plugin_source = "cartads"
+organization = "3liz-1"
+project = "qgis-cartads-plugin"
+resource = "qgis-cartads-plugin"
+#minimum_translation =  25.0
 
 #
 # Ruff
@@ -94,22 +88,23 @@ exclude = [
 indent-style = "space"
 
 [tool.ruff.lint]
-extend-select = ["E", "F", "I", "ANN", "W", "T", "COM", "RUF"]
+extend-select = [
+    "E", "F", "I", "ANN", "W", "T", "COM", "RUF",
+    "C4", "TC",
+]
 # COM812 conflict with formatter
 ignore = [
     "ANN002",
     "ANN003",
-    "T201",
+    "ANN401", # Dynamically typed expressions (typing.Any)
     "COM812",
+    "RUF067", # module should only contain docstrings and re-exports
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"test/*" = [
-    "T201",
-]
-"__init__.py" = [
-    "F401",
-]
+"tests/*" = [ "T201" ]
+"__init__.py" = [ "F401" ]
+"__main__.py" = [ "T201" ]
 
 [tool.ruff.lint.isort]
 lines-between-types = 1
@@ -133,13 +128,26 @@ suppress-dummy-args = true
 python_version = "3.10"
 
 [[tool.mypy.overrides]]
-module = "qgis.*"
+module = [
+    "qgis.*",
+    "osgeo.*",
+    "processing.*",
+]
 ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = "osgeo.*"
-ignore_missing_imports = true
+#
+# Coverage
+#
 
-[[tool.mypy.overrides]]
-module = "processing.*"
-ignore_missing_imports = true
+[tool.coverage.run]
+source = ["cartads"]
+branch = true
+relative_files = true
+
+[tool.coverage.report]
+precision = 2
+exclude_lines = [
+ "if TYPE_CHECKING",
+ '\(Protocol\):$',
+]
+

@@ -153,7 +153,7 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
             feedback.pushInfo(
                 tr("The database version already matches the plugin version. No upgrade needed.")
             )
-            return True
+            return
 
         migrations = resources.available_migrations(db_version)
         # Loop sql files and run SQL code
@@ -200,7 +200,6 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         except QgsProviderConnectionException as e:
             raise QgsProcessingException(str(e))
 
-        return True
 
     def processAlgorithm(self, parameters, context, feedback):
         connection_name = self.parameterAsConnectionName(parameters, self.CONNECTION_NAME, context)
