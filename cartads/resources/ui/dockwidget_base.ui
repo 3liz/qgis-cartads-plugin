@@ -152,6 +152,9 @@
              <property name="text">
               <string>Create database local interface</string>
              </property>
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
             </widget>
            </item>
            <item>
