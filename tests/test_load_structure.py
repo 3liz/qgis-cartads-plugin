@@ -13,8 +13,7 @@ from cartads.plugin_tools.resources import (
     available_migrations,
     schema_version,
 )
-from cartads.processing.database import CreateDatabaseStructure
-from cartads.processing.database import UpgradeDatabaseStructure
+from cartads.processing.database import CreateDatabaseStructure, UpgradeDatabaseStructure
 from cartads.processing.provider import Provider
 
 # This list must not be changed
@@ -43,9 +42,10 @@ TABLES_FOR_CURRENT_VERSION = [
     "zones",
 ]
 
+
 def test_available_migrations():
     versions = available_migrations()
-    assert versions[-1][0] == schema_version() # The last upgrade available
+    assert versions[-1][0] == schema_version()  # The last upgrade available
 
 
 def test_processing_create(processing_provider: Provider):
