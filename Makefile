@@ -81,8 +81,15 @@ test::
 # Test using docker image
 #
 
+ifdef REGISTRY_URL
+REGISTRY_PREFIX=$(REGISTRY_URL)/
+else
+REGISTRY_PREFIX=3liz/
+endif
+
+
 QGIS_VERSION ?= 3.44
-QGIS_IMAGE_REPOSITORY ?= 3liz/qgis-platform
+QGIS_IMAGE_REPOSITORY ?= ${REGISTRY_PREFIX}qgis-platform
 QGIS_IMAGE_TAG ?= $(QGIS_IMAGE_REPOSITORY):$(QGIS_VERSION)
 
 # Overridable in .localconfig.mk
