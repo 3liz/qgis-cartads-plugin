@@ -8,7 +8,7 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsProject,
 )
-from qgis.processing import execAlgorithmDialog
+from processing import execAlgorithmDialog
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import QPushButton
