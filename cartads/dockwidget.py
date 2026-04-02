@@ -3,12 +3,12 @@ import webbrowser
 from functools import partial
 from typing import Optional
 
+from processing import execAlgorithmDialog
 from qgis.core import (
     Qgis,
     QgsExpressionContextUtils,
     QgsProject,
 )
-from processing import execAlgorithmDialog
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import QPushButton
