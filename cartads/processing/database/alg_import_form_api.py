@@ -48,7 +48,8 @@ def get_token(client_id: str, login: str, password: str, auth_url: str) -> str:
 
     # Perform request
     r = requests.post(auth_url, json=auth_payload)
-    if r.status_code == requests.codes.ok and r.headers.get('content-type').startswith('application/json'):
+    if r.status_code == requests.codes.ok \
+            and r.headers.get('content-type','').startswith('application/json'):
         resp = r.json()
         return resp.get('Token')
 
@@ -64,7 +65,8 @@ def get_dossiers(token: str, api_url: str, api_payload: dict) -> list:
 
     # Perform requests
     r = requests.get(api_url, params=api_payload, headers=api_headers)
-    if r.status_code == requests.codes.ok and r.headers.get('content-type').startswith('application/json'):
+    if r.status_code == requests.codes.ok \
+        and r.headers.get('content-type', '').startswith('application/json'):
         resp = r.json()
         return resp
 
@@ -75,37 +77,40 @@ def get_dossiers(token: str, api_url: str, api_payload: dict) -> list:
 def dossiers_into_insert(dossiers: list, schema: str, feedback: QgsProcessingFeedback) -> str:
     ''' Create the SQL query to insert the dossiers'''
 
-    values = []
     # convert dossiers into INSERT SQL Values
-    for dossier in dossiers:
-        values.append(
-            f"("
-            f"{dossier.get('IdDossier')}, "
-            f"'{dossier.get('NomDossier')}', "
-            f"'{dossier.get('CoCommune')}', "
-            f"{dossier.get('NCommune')}, "
-            "'" + (dossier.get('NVoirieTerrain', '') + ' ' + dossier.get('AdresseTerrain', '')).strip().replace("'", "''") + "', "
-            f"'{dossier.get('Parcelles')}', "
-            f"'{dossier.get('CoTypeDossier')}', "
-            f"'{dossier.get('Annee')}', "
-            f"'{dossier.get('DateDepot')}', "
-            "" + (f"'{dossier.get('DateLimiteInstruction')}'" if dossier.get('DateLimiteInstruction') else "NULL") + ", "
-            f"'{dossier.get('DateModificationDossier')}', "
-            "" + (f"'{dossier.get('DateAvisInstructeur')}'" if dossier.get('DateAvisInstructeur') else "NULL") + ", "
-            "" + (f"'{dossier.get('DateDecisionSignataire')}'" if dossier.get('DateDecisionSignataire') else "NULL") + ", "
-            "" + (f"'{dossier.get('DateNotificationDecisionSignataire')}'" if dossier.get('DateNotificationDecisionSignataire') else "NULL") + ", "
-            "" + ("'" + dossier.get('Stade').replace("'", "''") + "'" if dossier.get('Stade') else "NULL") + ", "
-            "" + ("'" + dossier.get('AutoriteCompetente').replace("'", "''") + "'" if dossier.get('AutoriteCompetente') else "NULL") + ", "
-            "" + ("'" + dossier.get('Instructeur').replace("'", "''") + "'" if dossier.get('Instructeur') else "NULL") + ", "
-            "" + ("'" + dossier.get('AvisInstructeur').replace("'", "''") + "'" if dossier.get('AvisInstructeur') else "NULL") + ", "
-            "" + ("'" + dossier.get('Signataire').replace("'", "''") + "'" if dossier.get('Signataire') else "NULL") + ", "
-            "" + ("'" + dossier.get('DecisionSignataire').replace("'", "''") + "'" if dossier.get('DecisionSignataire') else "NULL") + ", "
-            "'" + (dossier.get('PrenomDemandeur', '') + ' ' + dossier.get('NomDemandeur', '')).strip().replace("'", "''") + "', "
-            f"'{dossier.get('UrlDossier')}'"
-            f")"
-        )
+
+    def quote(s: str) -> str:
+        return s.strip().replace("'", "''")
+
+    dossier_values = [(
+        "("
+        f"{dossier.get('IdDossier')}, "
+        f"'{dossier.get('NomDossier')}', "
+        f"'{dossier.get('CoCommune')}', "
+        f"{dossier.get('NCommune')}, "
+        f"'{dossier.get('NVoirieTerrain', '')} {quote(dossier.get('AdresseTerrain', ''))}', "
+        f"'{dossier.get('Parcelles')}', "
+        f"'{dossier.get('CoTypeDossier')}', "
+        f"'{dossier.get('Annee')}', "
+        f"'{dossier.get('DateDepot')}', "
+        f"'{dossier.get('DateLimiteInstruction', 'NULL')}', "
+        f"'{dossier.get('DateModificationDossier')}', "
+        f"'{dossier.get('DateAvisInstructeur', 'NULL')}', "
+        f"'{dossier.get('DateDecisionSignataire', 'NULL')}', "
+        f"'{dossier.get('DateNotificationDecisionSignataire', 'NULL')}', "
+        f"'{quote(dossier.get('Stade', 'NULL'))}', "
+        f"'{quote(dossier.get('AutoriteCompetente','NULL'))}', "
+        f"'{quote(dossier.get('Instructeur', 'NULL'))}', "
+        f"'{quote(dossier.get('AvisInstructeur', 'NULL'))}', "
+        f"'{quote(dossier.get('Signataire', 'NULL'))}', "
+        f"'{quote(dossier.get('DecisionSignataire', 'NULL'))}', "
+        f"'{dossier.get('PrenomDemandeur', '')}  {quote(dossier.get('NomDemandeur', ''))}', "
+        f"'{dossier.get('UrlDossier')}'"
+        ")"
+    ) for dossier in dossiers]
+
     # Join values
-    values = ',\n'.join(values)
+    values = ",\n".join(dossier_values)
     # Return the INSERT
     return (
         f"INSERT INTO \"{schema}\".new_cartads_dossier ("
@@ -400,10 +405,12 @@ class ImportFromApi(BaseDatabaseAlgorithm):
                 )
             )
             connection.executeSql(
-                f"DELETE FROM \"{schema}\".cartads_dossier_parcelle WHERE id_dossier IN ({','.join(map(str, dossiers_parcelles))})"
+                f"DELETE FROM \"{schema}\".cartads_dossier_parcelle WHERE "
+                f"id_dossier IN ({','.join(map(str, dossiers_parcelles))})"
             )
             connection.executeSql(
-                f"DELETE FROM \"{schema}\".cartads_dossier_geo WHERE id_dossier IN ({','.join(map(str, dossiers_parcelles))})"
+                f"DELETE FROM \"{schema}\".cartads_dossier_geo WHERE "
+                f"id_dossier IN ({','.join(map(str, dossiers_parcelles))})"
             )
 
         # ajout et mise à jour des dossiers
@@ -459,7 +466,8 @@ class ImportFromApi(BaseDatabaseAlgorithm):
                 "SELECT d.id_dossier, d.nom_dossier, "
                 "trim(unnest(string_to_array(d.liste_parcelles, ','))) cartads_parcelle "
                 f"FROM \"{schema}\".cartads_dossier d "
-                f"WHERE id_dossier IN ({','.join(map(str, dossiers_parcelles) + map(str, nouveaux_dossiers))})\n"
+                f"WHERE id_dossier IN "
+                f"({','.join(map(str, dossiers_parcelles) + map(str, nouveaux_dossiers))})\n"
                 "ON CONFLICT (id_dossier, cartads_parcelle) DO NOTHING\n"
                 "RETURNING id_dossier, cartads_parcelle "
             )
@@ -490,7 +498,8 @@ class ImportFromApi(BaseDatabaseAlgorithm):
                 f"  FROM \"{schema}\".cartads_dossier_parcelle cdp\n"
                 f"  LEFT JOIN \"{schema}\".cartads_parcelle_historique cph "
                 "ON cdp.cartads_parcelle = cph.cartads_parcelle\n"
-                f"  WHERE cdp.id_dossier IN ({','.join(map(str, dossiers_parcelles) + map(str, nouveaux_dossiers))}) "
+                f"  WHERE cdp.id_dossier IN "
+                f"({','.join(map(str, dossiers_parcelles) + map(str, nouveaux_dossiers))}) "
                 "       AND ST_IsValid(cph.geom)\n"
                 "   GROUP BY cdp.id_dossier, cdp.nom_dossier\n"
                 ") AS calculate_cdg\n"

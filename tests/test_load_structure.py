@@ -101,8 +101,6 @@ def test_upgrade_from(
 
     case = unittest.TestCase()
 
-    provider_id = processing_provider.id()
-
     cursor = db_connection.cursor()
 
     # Check the list of tables and views from the database
@@ -209,8 +207,6 @@ def test_upgrade_all(
     )
 
     case = unittest.TestCase()
-
-    provider_id = processing_provider.id()
 
     cursor = db_connection.cursor()
 

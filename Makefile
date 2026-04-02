@@ -8,38 +8,40 @@ export MODULE_NAME=cartads
 # Configure
 #
 
-ifeq ($(USE_UV), 1)
-UV_RUN ?= uv run
+# Check if uv is available
+$(eval UV_PATH=$(shell which uv))
+ifdef UV_PATH
+ifdef VIRTUAL_ENV
+# Always prefer active environment
+ACTIVE_VENV=--active
+endif
+UV=uv run $(ACTIVE_VENV)
 endif
 
 
-REQUIREMENTS= \
+REQUIREMENT_GROUPS= \
 	dev \
 	tests \
-	packaging \
+	transifex \
 	doc \
 	$(NULL)
 
-.PHONY: uv-required update-requirements
+.PHONY: update-requirements
+
+REQUIREMENTS=$(patsubst %, requirements/%.txt, $(REQUIREMENT_GROUPS))
+
+update-requirements: $(REQUIREMENTS)
 
 # Require uv (https://docs.astral.sh/uv/) for extracting
 # infos from project's dependency-groups
-update-requirements: check-uv-install
-	@for group in $(REQUIREMENTS); do \
-		echo "Updating requirements for '$$group'"; \
-		uv export --format requirements.txt \
-			--no-annotate \
-			--no-editable \
-			--no-hashes \
-			--only-group $$group \
-			-q -o requirements/$$group.txt; \
-	done
-
-uv.lock: pyproject.toml
-	uv sync
-
-update-dependencies: uv.lock
-	$(MAKE) update-requirements
+requirements/%.txt: uv.lock
+	@echo "Updating requirements for '$*'"; \
+	uv export --format requirements.txt \
+		--no-annotate \
+		--no-editable \
+		--no-hashes \
+		--only-group $* \
+		-q -o requirements/$*.txt; 
 
 #
 # Static analysis
@@ -48,28 +50,22 @@ update-dependencies: uv.lock
 LINT_TARGETS=$(MODULE_NAME) tests $(EXTRA_LINT_TARGETS)
 
 lint:: 
-	@ $(UV_RUN) ruff check --preview  --output-format=concise $(LINT_TARGETS)
+	@ $(UV) ruff check --output-format=concise $(LINT_TARGETS)
 
 lint:: typecheck
 
 lint-fix:
-	@ $(UV_RUN) ruff check --preview --fix $(LINT_TARGETS)
+	@ $(UV) ruff check --fix $(LINT_TARGETS)
 
 format:
-	@ $(UV_RUN) ruff format $(LINT_TARGETS) 
+	@ $(UV) ruff format $(LINT_TARGETS) 
 
 typecheck:
-	@ $(UV_RUN) mypy $(LINT_TARGETS)
+	@ $(UV) mypy $(LINT_TARGETS)
 
 scan:
-	@ $(UV_RUN) bandit -r $(MODULE_NAME) $(SCAN_OPTS)
+	@ $(UV) bandit -r $(MODULE_NAME) $(SCAN_OPTS)
 
-
-check-uv-install:
-	@which uv > /dev/null || { \
-		echo "You must install uv (https://docs.astral.sh/uv/)"; \
-		exit 1; \
-	}
 
 # Database rules
 -include database.mk
@@ -79,13 +75,14 @@ check-uv-install:
 #
 
 test::
-	$(UV_RUN) pytest -v tests
+	$(UV) pytest -v tests
 
 #
 # Test using docker image
 #
-QGIS_VERSION ?= 3.40
-QGIS_IMAGE_REPOSITORY ?= qgis/qgis
+
+QGIS_VERSION ?= 3.44
+QGIS_IMAGE_REPOSITORY ?= 3liz/qgis-platform
 QGIS_IMAGE_TAG ?= $(QGIS_IMAGE_REPOSITORY):$(QGIS_VERSION)
 
 # Overridable in .localconfig.mk
@@ -111,6 +108,13 @@ docker-test:
 #processing-doc:
 #	cd .docker && ./processing_doc.sh
 #	@docker run --rm -w /plugin -v $(shell pwd):/plugin etrimaille/pymarkdown:latest docs/pro#cessing/README.md docs/processing/index.html
+
+#
+# Update the project's environment
+#
+sync:
+	@echo "Synchronizing python's environment with frozen dependencies"
+	@uv sync --all-groups --frozen $(ACTIVE_VENV)
 
 #
 # Code managment

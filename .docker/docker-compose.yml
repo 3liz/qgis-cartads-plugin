@@ -7,11 +7,13 @@ services:
       # Remove HOME variable if not using database
       HOME: /home/qgis
       QGIS_VERSION: ${QGIS_VERSION}
+      TEST_RUNTYPE: docker
     volumes:
     - {type: bind, source: "..", target: /src}
 #
 # Remove everything from here if your are not using database
 #
+    - {type: bind, source: "./qgis_settings.ini", target: /src/tests/qgis_settings.ini}
     - type: bind
       source: ./pg_service.conf
       target: /etc/postgresql-common/pg_service.conf

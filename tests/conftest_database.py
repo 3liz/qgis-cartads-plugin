@@ -2,7 +2,7 @@
 import os
 
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Generator, Optional, Sequence
 
 import psycopg
 import pytest
@@ -61,14 +61,25 @@ def db_test_sql(data: Path) -> Sequence[Path]:
 # Initialize (Override existing) and return a db
 # connection
 @pytest.fixture()
-def db_connection() -> psycopg.Connection:
+def db_connection() -> Generator[psycopg.Connection, None, None]:
     """Initialize (Override existing) and return a db connection"""
-    connection = psycopg.connect(
-        user="docker",
-        password="docker",
-        host="db",
-        port="5432",
-        dbname="gis"
-    )
+    if os.getenv("TEST_RUNTYPE") == "docker":
+        connection = psycopg.connect(
+            user="docker",
+            password="docker",
+            host="db",
+            port="5432",
+            dbname="gis"
+        )
+    else:
+        connection = psycopg.connect(
+            user="docker",
+            password="docker",
+            host="localhost",
+            port="35432",
+            dbname="gis"
+        )
 
-    return connection
+    with connection:
+        yield connection
+
