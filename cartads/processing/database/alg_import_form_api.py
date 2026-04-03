@@ -82,6 +82,9 @@ def dossiers_into_insert(dossiers: list, schema: str, feedback: QgsProcessingFee
     def quote(s: str) -> str:
         return s.strip().replace("'", "''")
 
+    def str_or_null(s: str) -> str:
+        return f"'{quote(s)}'" if s else 'NULL'
+
     dossier_values = [(
         "("
         f"{dossier.get('IdDossier')}, "
@@ -93,18 +96,18 @@ def dossiers_into_insert(dossiers: list, schema: str, feedback: QgsProcessingFee
         f"'{dossier.get('CoTypeDossier')}', "
         f"'{dossier.get('Annee')}', "
         f"'{dossier.get('DateDepot')}', "
-        f"'{dossier.get('DateLimiteInstruction', 'NULL')}', "
+        f"{str_or_null(dossier.get('DateLimiteInstruction', ''))}, "
         f"'{dossier.get('DateModificationDossier')}', "
-        f"'{dossier.get('DateAvisInstructeur', 'NULL')}', "
-        f"'{dossier.get('DateDecisionSignataire', 'NULL')}', "
-        f"'{dossier.get('DateNotificationDecisionSignataire', 'NULL')}', "
-        f"'{quote(dossier.get('Stade', 'NULL'))}', "
-        f"'{quote(dossier.get('AutoriteCompetente','NULL'))}', "
-        f"'{quote(dossier.get('Instructeur', 'NULL'))}', "
-        f"'{quote(dossier.get('AvisInstructeur', 'NULL'))}', "
-        f"'{quote(dossier.get('Signataire', 'NULL'))}', "
-        f"'{quote(dossier.get('DecisionSignataire', 'NULL'))}', "
-        f"'{dossier.get('PrenomDemandeur', '')}  {quote(dossier.get('NomDemandeur', ''))}', "
+        f"{str_or_null(dossier.get('DateAvisInstructeur', ''))}, "
+        f"{str_or_null(dossier.get('DateDecisionSignataire', ''))}, "
+        f"{str_or_null(dossier.get('DateNotificationDecisionSignataire', ''))}, "
+        f"{str_or_null(dossier.get('Stade', ''))}, "
+        f"{str_or_null(dossier.get('AutoriteCompetente', ''))}, "
+        f"{str_or_null(dossier.get('Instructeur', ''))}, "
+        f"{str_or_null(dossier.get('AvisInstructeur', ''))}, "
+        f"{str_or_null(dossier.get('Signataire', ''))}, "
+        f"{str_or_null(dossier.get('DecisionSignataire', ''))}, "
+        f"'{dossier.get('PrenomDemandeur', '')} {quote(dossier.get('NomDemandeur', ''))}', "
         f"'{dossier.get('UrlDossier')}'"
         ")"
     ) for dossier in dossiers]
