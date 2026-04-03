@@ -461,6 +461,7 @@ class ImportFromApi(BaseDatabaseAlgorithm):
 
         # Mise à jour des parcelles et la géométrie des dossiers
         if dossiers_parcelles or nouveaux_dossiers:
+            tous_dossiers = list(map(str, dossiers_parcelles)) + list(map(str, nouveaux_dossiers))
             # Mise à jour des parcelles des dossiers
             feedback.pushInfo("Lancement de la mise à jour des parcelles des dossiers")
             connection.executeSql(
@@ -470,7 +471,7 @@ class ImportFromApi(BaseDatabaseAlgorithm):
                 "trim(unnest(string_to_array(d.liste_parcelles, ','))) cartads_parcelle "
                 f"FROM \"{schema}\".cartads_dossier d "
                 f"WHERE id_dossier IN "
-                f"({','.join(map(str, dossiers_parcelles) + map(str, nouveaux_dossiers))})\n"
+                f"({','.join(tous_dossiers)})\n"
                 "ON CONFLICT (id_dossier, cartads_parcelle) DO NOTHING\n"
                 "RETURNING id_dossier, cartads_parcelle "
             )
@@ -502,7 +503,7 @@ class ImportFromApi(BaseDatabaseAlgorithm):
                 f"  LEFT JOIN \"{schema}\".cartads_parcelle_historique cph "
                 "ON cdp.cartads_parcelle = cph.cartads_parcelle\n"
                 f"  WHERE cdp.id_dossier IN "
-                f"({','.join(map(str, dossiers_parcelles) + map(str, nouveaux_dossiers))}) "
+                f"({','.join(tous_dossiers)}) "
                 "       AND ST_IsValid(cph.geom)\n"
                 "   GROUP BY cdp.id_dossier, cdp.nom_dossier\n"
                 ") AS calculate_cdg\n"
